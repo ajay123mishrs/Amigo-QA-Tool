@@ -31,12 +31,21 @@ def index():
 @app.route('/run_test', methods=['POST'])
 def run_test():
     try:
-        data = request.json
-        original_url = data.get('url', '')
-        uid = data.get('uid', 'TEST1')
-        country = data.get('country', 'US')
+        # JSON ya Form, jo bhi data aaye use pakdo
+        data = request.json or request.form.to_dict() or {}
+        print(f"🔥 FRONTEND SE YEH DATA AAYA: {data}", flush=True)
+
+        # Har possible variable name check karo (url, survey_url, link etc.)
+        original_url = data.get('url') or data.get('survey_url') or data.get('surveyLink') or data.get('link') or ''
+        uid = data.get('uid') or data.get('test_uid') or data.get('testUid') or 'TEST1'
+        country = data.get('country') or data.get('countryCode') or 'US'
+
+        # Agar URL sach mein khaali hai, toh pehle hi bata do
+        if not original_url:
+            raise Exception("Link frontend se backend tak nahi pahuncha. Variable name check karein!")
 
         test_url = replace_uid(original_url, uid)
+        print(f"🔥 CHROME YEH LINK KHOLEGA: {test_url}", flush=True)
 
         # Render/Cloud server ke liye special browser settings
         with sync_playwright() as p:
