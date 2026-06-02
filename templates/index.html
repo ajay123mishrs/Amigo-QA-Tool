@@ -5,112 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amigo Insight - QA Testing</title>
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-        .container {
-            background-color: var(--card-bg);
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 500px;
-        }
-        h2 { text-align: center; margin-top: 0; color: var(--primary); font-weight: 600; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; }
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            background-color: #0f172a;
-            color: white;
-            box-sizing: border-box;
-            font-size: 15px;
-        }
-        input:focus { outline: none; border-color: var(--primary); }
-        button {
-            width: 100%;
-            padding: 14px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        button:hover { background-color: var(--primary-hover); }
+        :root { --bg-color: #0f172a; --card-bg: #1e293b; --primary: #3b82f6; --success: #10b981; --danger: #ef4444; }
+        body { font-family: sans-serif; background: var(--bg-color); color: #fff; display: flex; justify-content: center; padding: 20px; }
+        .container { background: var(--card-bg); padding: 30px; border-radius: 16px; width: 100%; max-width: 500px; }
+        input { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .loader { display: none; text-align: center; margin-top: 20px; color: var(--primary); font-weight: bold; }
+        .result-box { display: none; margin-top: 25px; padding: 15px; border-radius: 8px; background: #0f172a; border-left: 4px solid var(--success); word-wrap: break-word; }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <h2>Amigo QA Tester</h2>
-    <div class="form-group">
-        <label>Live Survey Link</label>
-        <input type="url" id="link" placeholder="Paste link from dashboard here..." required>
+    <h2 style="text-align:center; color:#3b82f6;">Amigo QA Tester</h2>
+    <label>Live Survey Link</label>
+    <input type="url" id="link" required>
+    
+    <label>Country Code</label>
+    <input type="text" id="country" value="MX" required>
+    
+    <label>Test UID</label>
+    <input type="text" id="uid" value="TEST1" required>
+    
+    <button onclick="runTest()" id="testBtn">Run Auto-Click QA</button>
+    <div class="loader" id="loader">Proxy Connect ho rahi hai... Auto-clicking Start Survey...</div>
+    
+    <div class="result-box" id="resultBox">
+        <h3 id="resultStatus" style="margin-top:0;"></h3>
+        <div style="font-size: 13px; color: #94a3b8; margin-top: 10px;">Final Captured URL: <br> <span id="finalUrl" style="color: white;"></span></div>
     </div>
-    <div class="form-group">
-        <label>Country Code (e.g., US, AR, MX)</label>
-        <input type="text" id="country" value="MX" required>
-    </div>
-    <div class="form-group">
-        <label>Test UID (e.g., TEST1)</label>
-        <input type="text" id="uid" value="TEST1" required>
-    </div>
-    <button onclick="runTest()" id="testBtn">Run QA Test</button>
 </div>
 
 <script>
-    function runTest() {
-        let link = document.getElementById('link').value.trim();
-        const uid = document.getElementById('uid').value.trim();
-        
-        if(!link) {
-            alert("Bhai, pehle Live Survey Link daalein!");
-            return;
-        }
+    async function runTest() {
+        const link = document.getElementById('link').value;
+        const uid = document.getElementById('uid').value;
+        if(!link) return alert("Link daaliye!");
 
-        // Agar link mein http nahi hai toh auto-add karega
-        if (!link.startsWith('http://') && !link.startsWith('https://')) {
-            link = 'https://' + link;
-        }
+        document.getElementById('testBtn').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('resultBox').style.display = 'none';
 
         try {
-            let urlObj = new URL(link);
-            let params = new URLSearchParams(urlObj.search);
+            const res = await fetch('/run_test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ link, uid })
+            });
+            const data = await res.json();
             
-            // Purani UID hata kar nayi daalna
-            params.delete('UID');
-            params.delete('uid');
-            params.set('UID', uid);
+            document.getElementById('resultBox').style.display = 'block';
+            document.getElementById('finalUrl').innerText = data.final_url || "Error";
             
-            urlObj.search = params.toString();
-            const testUrl = urlObj.toString();
+            const statusEl = document.getElementById('resultStatus');
+            if(data.status === "success") {
+                document.getElementById('resultBox').style.borderLeftColor = "var(--success)";
+                statusEl.innerText = "✅ " + data.message;
+                statusEl.style.color = "var(--success)";
+            } else {
+                document.getElementById('resultBox').style.borderLeftColor = "var(--danger)";
+                statusEl.innerText = "❌ Error";
+                statusEl.style.color = "var(--danger)";
+            }
+        } catch(e) { alert("Server connection error"); }
 
-            // DUNIYA KA KOI BROWSER ISKO NAHI ROK SAKTA (Same tab redirect)
-            window.location.href = testUrl;
-            
-        } catch(e) {
-            alert("Link me kuch gadbad hai, please check: " + link);
-        }
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('testBtn').style.display = 'block';
     }
 </script>
 </body>
