@@ -74,8 +74,8 @@ def run_test():
             # Webdriver identity hide karne ki script
             page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-            # Link kholna
-            page.goto(test_url, timeout=60000)
+            # 🔥 NAYA FIX: Timeout 90s kar diya hai aur page ke puri tarah load hone ka wait nahi karega
+            page.goto(test_url, timeout=90000, wait_until='domcontentloaded')
             
             # Client server par exact redirect ke liye 8 second ka solid wait
             page.wait_for_timeout(8000) 
