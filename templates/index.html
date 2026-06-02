@@ -59,13 +59,6 @@
             transition: 0.3s;
         }
         button:hover { background-color: var(--primary-hover); }
-        .loader {
-            display: none;
-            text-align: center;
-            margin-top: 20px;
-            color: var(--primary);
-            font-weight: bold;
-        }
         .result-box {
             display: none;
             margin-top: 25px;
@@ -95,55 +88,32 @@
         <input type="text" id="uid" value="TEST1" required>
     </div>
     <button onclick="runTest()" id="testBtn">Run QA Test</button>
-
-    <div class="loader" id="loader">Running test via Proxy... Please wait.</div>
     
     <div class="result-box" id="resultBox">
         <h3 id="resultStatus" style="margin-top:0;"></h3>
-        <div class="url-text">Final URL: <br> <span id="finalUrl" style="color: white;"></span></div>
+        <div class="url-text">Final URL Opened: <br> <span id="finalUrl" style="color: white;"></span></div>
     </div>
 </div>
 
 <script>
-    async function runTest() {
+    function runTest() {
         const link = document.getElementById('link').value;
-        const country = document.getElementById('country').value;
         const uid = document.getElementById('uid').value;
         
         if(!link) return alert("Please enter a link!");
 
-        document.getElementById('testBtn').style.display = 'none';
-        document.getElementById('loader').style.display = 'block';
-        document.getElementById('resultBox').style.display = 'none';
-
         try {
-            const response = await fetch('/run_test', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ link, country, uid })
-            });
-            const data = await response.json();
+            // URL ko parse karke usme naya UID set karna
+            let urlObj = new URL(link);
+            let params = new URLSearchParams(urlObj.search);
             
-            document.getElementById('resultBox').style.display = 'block';
-            document.getElementById('finalUrl').innerText = data.final_url || "Failed to load";
-            
-            const statusEl = document.getElementById('resultStatus');
-            if(data.status === "success") {
-                document.getElementById('resultBox').style.borderLeftColor = "var(--success)";
-                statusEl.innerText = "✅ " + data.message;
-                statusEl.style.color = "var(--success)";
+            if (params.has('UID')) {
+                params.set('UID', uid);
+            } else if (params.has('uid')) {
+                params.set('uid', uid);
             } else {
-                document.getElementById('resultBox').style.borderLeftColor = "var(--danger)";
-                statusEl.innerText = "❌ Error Occurred";
-                statusEl.style.color = "var(--danger)";
+                params.set('UID', uid);
             }
-        } catch(e) {
-            alert("Connection error!");
-        }
-
-        document.getElementById('loader').style.display = 'none';
-        document.getElementById('testBtn').style.display = 'block';
-    }
-</script>
-</body>
-</html>
+            
+            urlObj.search = params.toString();
+            const finalUrl = urlObj.toString();
