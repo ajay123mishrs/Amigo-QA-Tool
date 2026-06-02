@@ -16,6 +16,7 @@ def replace_uid(url: str, new_uid: str) -> str:
     parsed = urlparse(url)
     query = parse_qs(parsed.query)
     
+    # Check and replace UID (case insensitive handling)
     if 'UID' in query:
         query['UID'] = [new_uid]
     elif 'uid' in query:
@@ -31,6 +32,7 @@ def index():
 @app.route('/run_test', methods=['POST'])
 def run_test():
     try:
+        # JSON ya Form data dono catch karega
         data = request.json or request.form.to_dict() or {}
         print(f"🔥 FRONTEND SE YEH DATA AAYA: {data}", flush=True)
 
@@ -51,7 +53,8 @@ def run_test():
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
-                    '--single-process'
+                    '--single-process',
+                    '--disable-blink-features=AutomationControlled' # Bot detection strict bypass
                 ],
                 proxy={
                     "server": f"http://{SERVER}",
@@ -60,20 +63,26 @@ def run_test():
                 }
             )
             
-            context = browser.new_context(ignore_https_errors=True)
+            # Asli Windows aur Chrome ka Mask
+            context = browser.new_context(
+                ignore_https_errors=True,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+                viewport={'width': 1920, 'height': 1080}
+            )
             page = context.new_page()
+
+            # Webdriver identity hide karne ki script
+            page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
             # Link kholna
             page.goto(test_url, timeout=60000)
             
-            # 🔥 Yahan humne bot ko 7 second rukne ko kaha hai taaki redirect ho sake
-            page.wait_for_load_state('networkidle', timeout=60000)
-            page.wait_for_timeout(7000) 
+            # Client server par exact redirect ke liye 8 second ka solid wait
+            page.wait_for_timeout(8000) 
 
             final_url = page.url
             browser.close()
 
-            # 🔥 "undefined" hatane ke liye message add kiya
             return jsonify({
                 "status": "success",
                 "message": "Test Completed Successfully!", 
