@@ -12,8 +12,6 @@
             --primary-hover: #2563eb;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --success: #10b981;
-            --danger: #ef4444;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -59,16 +57,6 @@
             transition: 0.3s;
         }
         button:hover { background-color: var(--primary-hover); }
-        .result-box {
-            display: none;
-            margin-top: 25px;
-            padding: 15px;
-            border-radius: 8px;
-            background-color: #0f172a;
-            border-left: 4px solid var(--success);
-            word-wrap: break-word;
-        }
-        .url-text { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -88,32 +76,42 @@
         <input type="text" id="uid" value="TEST1" required>
     </div>
     <button onclick="runTest()" id="testBtn">Run QA Test</button>
-    
-    <div class="result-box" id="resultBox">
-        <h3 id="resultStatus" style="margin-top:0;"></h3>
-        <div class="url-text">Final URL Opened: <br> <span id="finalUrl" style="color: white;"></span></div>
-    </div>
 </div>
 
 <script>
     function runTest() {
-        const link = document.getElementById('link').value;
-        const uid = document.getElementById('uid').value;
+        let link = document.getElementById('link').value.trim();
+        const uid = document.getElementById('uid').value.trim();
         
-        if(!link) return alert("Please enter a link!");
+        if(!link) {
+            alert("Bhai, pehle Live Survey Link daalein!");
+            return;
+        }
+
+        // Agar link mein http nahi hai toh auto-add karega
+        if (!link.startsWith('http://') && !link.startsWith('https://')) {
+            link = 'https://' + link;
+        }
 
         try {
-            // URL ko parse karke usme naya UID set karna
             let urlObj = new URL(link);
             let params = new URLSearchParams(urlObj.search);
             
-            if (params.has('UID')) {
-                params.set('UID', uid);
-            } else if (params.has('uid')) {
-                params.set('uid', uid);
-            } else {
-                params.set('UID', uid);
-            }
+            // Purani UID hata kar nayi daalna
+            params.delete('UID');
+            params.delete('uid');
+            params.set('UID', uid);
             
             urlObj.search = params.toString();
-            const finalUrl = urlObj.toString();
+            const testUrl = urlObj.toString();
+
+            // DUNIYA KA KOI BROWSER ISKO NAHI ROK SAKTA (Same tab redirect)
+            window.location.href = testUrl;
+            
+        } catch(e) {
+            alert("Link me kuch gadbad hai, please check: " + link);
+        }
+    }
+</script>
+</body>
+</html>
